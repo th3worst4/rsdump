@@ -22,10 +22,16 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
-use std::env::args;
-use std::path::Path;
+//use std::env::args;
+//use std::path::Path;
 use std::fs;
 use std::io::Error;
+
+use clap::{
+    Command,
+    Arg,
+    ArgAction
+};
 
 const HELP_MESSAGE:&str = "Usage: rsdump [options] path
 Basic hexdump tool written in Rust
@@ -102,40 +108,70 @@ fn print_formated(raw_data:Vec<u8>, ascii_vector:Vec<char>, print_char:bool){
 }
 
 fn main() -> std::io::Result<()> {
-    let args:Vec<String> = args().collect();
-    if args.len() < 2 {
-        panic!("No arguments were given");
-    }
-    let mut print_ascii: bool = false;
-    let mut path = String::new();
-    for arg in args.iter() {
-        if arg == "--help" {
-            println!("{}", HELP_MESSAGE);
-            return Ok(());
-        }
-        if arg == "--author" {
-            println!("{}", AUTHORSHIP);
-            return Ok(());
-        }
-        if arg == "--ascii" {
-            print_ascii = true;
-        }
-        if Path::new(arg).exists() {
-            path = arg.clone();
-        }
-    }
+    //let args:Vec<String> = args().collect();
+    //if args.len() < 2 {
+    //    panic!("No arguments were given");
+    //}
+    //let mut print_ascii: bool = false;
+    //let mut path = String::new();
+    //for arg in args.iter() {
+    //    if arg == "--help" {
+    //        println!("{}", HELP_MESSAGE);
+    //        return Ok(());
+    //    }
+    //    if arg == "--author" {
+    //        println!("{}", AUTHORSHIP);
+    //        return Ok(());
+    //    }
+    //    if arg == "--ascii" {
+    //        print_ascii = true;
+    //    }
+    //    if Path::new(arg).exists() {
+    //        path = arg.clone();
+    //    }
+    //}
 
-    if path == args[0] {
-        panic!("No path was given");
-    } 
+    //if path == args[0] {
+    //    panic!("No path was given");
+    //} 
 
-    let read_result = read_raw_data(path);
+    let cli = Command::new("rsdump")
+        .author("Caio S. Couto, caiocouto25@hotmail.com")
+        .version("1.1.0")
+        .arg(
+            Arg::new("ascii")
+                .long("ascii")
+                .action(ArgAction::SetTrue)
+                .help("prints ascii values table")
+        )
+        .arg(
+            Arg::new("author")
+                .long("author")
+                .action(ArgAction::SetTrue)
+                .help("prints info about authorship")
+        )
+        .arg(
+            Arg::new("path")
+                .help("path to file to hexdump")
+        );
+
+    let matches = cli.get_matches();
+
+    let print_ascii = matches.get_one::<bool>("ascii").unwrap();
+    if *matches.get_one::<bool>("author").unwrap() {
+        println!("{}", AUTHORSHIP);
+        return Ok(());
+    }
+    let path = matches.get_one::<String>("path").expect("A path is required");
+
+    let read_result = read_raw_data(path.to_string());
+    let path = matches.get_one::<String>("path").expect("A path is required");
     let raw_data = match  read_result {
         Ok(raw_data) => raw_data,
         Err(error) => panic!("Could not populate the buffer: {error}"),
     };
 
     let ascii_vector = create_char_vector(raw_data.clone()).unwrap();
-    print_formated(raw_data, ascii_vector, print_ascii); 
+    print_formated(raw_data, ascii_vector, *print_ascii); 
     Ok(())
 }
